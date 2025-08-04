@@ -481,18 +481,34 @@ function calculateSchedule(models, startTime, schedule, overtime, productionLine
             const availableMinutes = periodEndMinutes - currentMinutes;
             const productionMinutes = Math.min(remainingMinutes, availableMinutes);
             
+            // 생산 가능한 시간이 ST보다 작으면 다음 시간대로 넘어감
+            if (productionMinutes < model.st) {
+                remainingMinutes -= productionMinutes;
+                currentProductionTime = addMinutes(currentProductionTime, productionMinutes);
+                continue;
+            }
+            
             // 생산 수량 계산 (소수점 내림)
             const productionQuantity = Math.floor(productionMinutes / model.st);
             const actualProductionMinutes = productionQuantity * model.st;
             
-            if (productionQuantity > 0) {
-                const periodEndTime = addMinutes(currentProductionTime, actualProductionMinutes);
+            // 생산 수량이 0이더라도 최소 1개는 생산 가능한지 확인
+            let finalProductionQuantity = productionQuantity;
+            let finalProductionMinutes = actualProductionMinutes;
+            
+            if (productionQuantity === 0 && productionMinutes >= model.st) {
+                finalProductionQuantity = 1;
+                finalProductionMinutes = model.st;
+            }
+            
+            if (finalProductionQuantity > 0) {
+                const periodEndTime = addMinutes(currentProductionTime, finalProductionMinutes);
                 const scheduleItem = {
                     period: currentPeriod.name,
                     startTime: currentProductionTime,
                     endTime: periodEndTime,
-                    quantity: productionQuantity,
-                    minutes: actualProductionMinutes
+                    quantity: finalProductionQuantity,
+                    minutes: finalProductionMinutes
                 };
                 
                 if (isNextDay) {
@@ -504,8 +520,8 @@ function calculateSchedule(models, startTime, schedule, overtime, productionLine
                 }
             }
             
-            remainingMinutes -= actualProductionMinutes;
-            currentProductionTime = addMinutes(currentProductionTime, actualProductionMinutes);
+            remainingMinutes -= finalProductionMinutes;
+            currentProductionTime = addMinutes(currentProductionTime, finalProductionMinutes);
             
             // 하루 종료 시간 확인
             let dayEndTime;
@@ -525,7 +541,7 @@ function calculateSchedule(models, startTime, schedule, overtime, productionLine
                 continue;
             }
             
-            // 남은 시간이 너무 작으면 (1분 이하) 무시
+            // 남은 시간이 너무 작으면 (ST보다 작거나 같으면) 무시
             if (remainingMinutes <= model.st) {
                 remainingMinutes = 0;
                 break;
