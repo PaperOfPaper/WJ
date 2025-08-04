@@ -104,6 +104,73 @@ const productionSchedule = {
 // 전역 변수
 let modelCount = 0;
 
+// 접속자 정보 표시 함수
+function displayVisitorInfo() {
+    // 접속자 정보 수집
+    const userAgent = navigator.userAgent;
+    const platform = navigator.platform;
+    const language = navigator.language;
+    const screenWidth = screen.width;
+    const screenHeight = screen.height;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    // 모바일 기기 감지
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const deviceType = isMobile ? '모바일' : '데스크톱';
+    
+    // 접속 시간
+    const accessTime = new Date().toLocaleString('ko-KR');
+    
+    // 접속자 정보 HTML 생성
+    const visitorInfo = `
+        <div class="visitor-info">
+            <h3>접속자 정보</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>접속 시간:</strong> ${accessTime}
+                </div>
+                <div class="info-item">
+                    <strong>기기 유형:</strong> ${deviceType}
+                </div>
+                <div class="info-item">
+                    <strong>운영체제:</strong> ${platform}
+                </div>
+                <div class="info-item">
+                    <strong>언어:</strong> ${language}
+                </div>
+                <div class="info-item">
+                    <strong>화면 해상도:</strong> ${screenWidth} x ${screenHeight}
+                </div>
+                <div class="info-item">
+                    <strong>창 크기:</strong> ${windowWidth} x ${windowHeight}
+                </div>
+                <div class="info-item">
+                    <strong>브라우저 정보:</strong> ${userAgent.substring(0, 100)}...
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 페이지에 정보 표시
+    const container = document.querySelector('.container');
+    const header = document.querySelector('header');
+    header.insertAdjacentHTML('afterend', visitorInfo);
+    
+    // IP 주소 가져오기 (외부 API 사용)
+    fetch('https://api.ipify.org?format=json')
+        .then(response => response.json())
+        .then(data => {
+            const ipInfo = document.createElement('div');
+            ipInfo.className = 'info-item';
+            ipInfo.innerHTML = `<strong>IP 주소:</strong> ${data.ip}`;
+            document.querySelector('.info-grid').appendChild(ipInfo);
+        })
+        .catch(error => {
+            console.log('IP 주소를 가져올 수 없습니다:', error);
+        });
+}
+
 // DOM 로드 완료 후 실행
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -117,6 +184,9 @@ function initializeApp() {
     // 이벤트 리스너 등록
     document.getElementById('addModel').addEventListener('click', addModelForm);
     document.getElementById('calculateBtn').addEventListener('click', calculateProductionTime);
+    
+    // 접속자 정보 표시
+    displayVisitorInfo();
 }
 
 // 모델 폼 추가
