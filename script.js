@@ -103,9 +103,38 @@ const productionSchedule = {
 
 // 전역 변수
 let modelCount = 0;
+let visitorInfoVisible = false;
+let visitorInfoElement = null;
+
+// 관리자 모드 토글 함수
+function toggleVisitorInfo() {
+    const password = prompt('관리자 비밀번호를 입력하세요:');
+    
+    // 비밀번호 확인 (여기서는 간단히 'admin123'으로 설정)
+    if (password === 'admin123') {
+        if (!visitorInfoVisible) {
+            displayVisitorInfo();
+            visitorInfoVisible = true;
+            document.getElementById('toggleVisitorInfo').textContent = '접속자 정보 숨기기';
+            document.getElementById('toggleVisitorInfo').classList.add('active');
+        } else {
+            hideVisitorInfo();
+            visitorInfoVisible = false;
+            document.getElementById('toggleVisitorInfo').textContent = '관리자 모드';
+            document.getElementById('toggleVisitorInfo').classList.remove('active');
+        }
+    } else if (password !== null) {
+        alert('비밀번호가 올바르지 않습니다.');
+    }
+}
 
 // 접속자 정보 표시 함수
 function displayVisitorInfo() {
+    // 이미 표시되어 있다면 제거
+    if (visitorInfoElement) {
+        visitorInfoElement.remove();
+    }
+    
     // 접속자 정보 수집
     const userAgent = navigator.userAgent;
     const platform = navigator.platform;
@@ -124,8 +153,8 @@ function displayVisitorInfo() {
     
     // 접속자 정보 HTML 생성
     const visitorInfo = `
-        <div class="visitor-info">
-            <h3>접속자 정보</h3>
+        <div class="visitor-info" id="visitorInfo">
+            <h3>🔒 관리자 전용 - 접속자 정보</h3>
             <div class="info-grid">
                 <div class="info-item">
                     <strong>접속 시간:</strong> ${accessTime}
@@ -153,9 +182,9 @@ function displayVisitorInfo() {
     `;
     
     // 페이지에 정보 표시
-    const container = document.querySelector('.container');
     const header = document.querySelector('header');
     header.insertAdjacentHTML('afterend', visitorInfo);
+    visitorInfoElement = document.getElementById('visitorInfo');
     
     // IP 주소 가져오기 (외부 API 사용)
     fetch('https://api.ipify.org?format=json')
@@ -171,6 +200,14 @@ function displayVisitorInfo() {
         });
 }
 
+// 접속자 정보 숨기기 함수
+function hideVisitorInfo() {
+    if (visitorInfoElement) {
+        visitorInfoElement.remove();
+        visitorInfoElement = null;
+    }
+}
+
 // DOM 로드 완료 후 실행
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -184,9 +221,10 @@ function initializeApp() {
     // 이벤트 리스너 등록
     document.getElementById('addModel').addEventListener('click', addModelForm);
     document.getElementById('calculateBtn').addEventListener('click', calculateProductionTime);
+    document.getElementById('toggleVisitorInfo').addEventListener('click', toggleVisitorInfo);
     
-    // 접속자 정보 표시
-    displayVisitorInfo();
+    // 접속자 정보는 기본적으로 숨김
+    visitorInfoVisible = false;
 }
 
 // 모델 폼 추가

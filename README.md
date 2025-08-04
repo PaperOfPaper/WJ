@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/21578772/README.md)
 # 우주의 계산기 VER.1
 
 옵시디언 문서를 기반으로 제작된 모바일 최적화 생산 시간 계산 웹사이트입니다.
