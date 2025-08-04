@@ -582,6 +582,12 @@ function displayResults(results) {
         const totalQuantity = result.schedule.reduce((sum, period) => sum + period.quantity, 0);
         const actualProductionMinutes = result.schedule.reduce((sum, period) => sum + period.minutes, 0);
         
+        // 당일과 다음날 생산량 계산
+        const todayQuantity = result.schedule.reduce((sum, period) => sum + period.quantity, 0);
+        const todayMinutes = result.schedule.reduce((sum, period) => sum + period.minutes, 0);
+        const nextDayQuantity = result.nextDaySchedule.reduce((sum, period) => sum + period.quantity, 0);
+        const nextDayMinutes = result.nextDaySchedule.reduce((sum, period) => sum + period.minutes, 0);
+        
         resultItem.innerHTML = `
             <h4>${result.name}</h4>
             <div class="result-details">
@@ -616,6 +622,9 @@ function displayResults(results) {
             ` : ''}
             <div class="result-schedule">
                 <h5>타임별 생산수량</h5>
+                <div class="schedule-summary" style="background: #f8f9fa; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #dee2e6;">
+                    <strong>당일 총 생산수량:</strong> ${todayQuantity}개 | <strong>당일 총 생산시간:</strong> ${Math.round(todayMinutes)}분
+                </div>
                 ${result.schedule.map(period => `
                     <div class="schedule-item">
                         <span class="schedule-time">${period.startTime} ~ ${period.endTime}</span>
@@ -626,6 +635,9 @@ function displayResults(results) {
             ${result.nextDaySchedule.length > 0 ? `
             <div class="result-schedule" style="background: #e8f5e8; border: 1px solid #4caf50;">
                 <h5 style="color: #2e7d32;">다음날 타임별 생산수량</h5>
+                <div class="schedule-summary" style="background: #d4edda; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #c3e6cb;">
+                    <strong>다음날 총 생산수량:</strong> ${nextDayQuantity}개 | <strong>다음날 총 생산시간:</strong> ${Math.round(nextDayMinutes)}분
+                </div>
                 ${result.nextDaySchedule.map(period => `
                     <div class="schedule-item">
                         <span class="schedule-time">${period.startTime} ~ ${period.endTime}</span>
