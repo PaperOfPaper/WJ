@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우주의 계산기 VER.1</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>우주의 계산기 VER.1</h1>
+        </header>
+
+        <main>
+            <!-- 입력 섹션 -->
+            <section class="input-section">
+                <h2>기본 설정</h2>
+                
+                <!-- 생산 라인 선택 -->
+                <div class="form-group">
+                    <label>생산 라인 선택</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="productionLine" value="AB" checked>
+                            <span class="radio-custom"></span>
+                            A/B 라인
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="productionLine" value="CD">
+                            <span class="radio-custom"></span>
+                            C/D 라인
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="productionLine" value="E">
+                            <span class="radio-custom"></span>
+                            E 라인
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 잔업 선택 -->
+                <div class="form-group">
+                    <label>잔업 선택</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="overtime" value="0" checked>
+                            <span class="radio-custom"></span>
+                            미잔업
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="overtime" value="1">
+                            <span class="radio-custom"></span>
+                            1시간 잔업
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="overtime" value="2">
+                            <span class="radio-custom"></span>
+                            2시간 잔업
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 시작 시간 입력 -->
+                <div class="form-group">
+                    <label for="startTime">시작 시간</label>
+                    <input type="time" id="startTime" value="08:30" required>
+                </div>
+            </section>
+
+            <!-- 모델 입력 섹션 -->
+            <section class="models-section">
+                <h2>모델 정보</h2>
+                <div id="modelsContainer">
+                    <!-- 기본 4개 모델 입력 폼 -->
+                </div>
+                <button type="button" id="addModel" class="btn btn-secondary">모델 추가</button>
+            </section>
+
+            <!-- 계산 버튼 -->
+            <div class="calculate-section">
+                <button type="button" id="calculateBtn" class="btn btn-primary">생산 시간 계산</button>
+            </div>
+
+            <!-- 결과 섹션 -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h2>생산 스케줄 결과</h2>
+                <div id="resultsContainer"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
