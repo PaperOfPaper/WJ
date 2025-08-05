@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>우주의 계산기 VER.1</title>
+    <title>우주의 계산기 VER.2</title>
     <link rel="stylesheet" href="styles.css">
     
     <!-- Google tag (gtag.js) -->
@@ -19,7 +19,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>우주의 계산기 VER.1</h1>
+            <h1>우주의 계산기 VER.2</h1>
             <div class="admin-controls">
                 <button type="button" id="toggleVisitorInfo" class="btn btn-admin">관리자 모드</button>
             </div>
@@ -30,54 +30,81 @@
             <section class="input-section">
                 <h2>기본 설정</h2>
                 
-                <!-- 생산 라인 선택 -->
-                <div class="form-group">
-                    <label>생산 라인 선택</label>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="productionLine" value="AB" checked>
-                            <span class="radio-custom"></span>
-                            A/B 라인
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="productionLine" value="CD">
-                            <span class="radio-custom"></span>
-                            C/D 라인
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="productionLine" value="E">
-                            <span class="radio-custom"></span>
-                            E 라인
-                        </label>
+                <!-- 생산 라인 선택과 잔업 선택을 한 줄에 배치 -->
+                <div class="form-row">
+                    <!-- 생산 라인 선택 -->
+                    <div class="form-group compact">
+                        <label>생산 라인 선택</label>
+                        <div class="radio-group horizontal">
+                            <label class="radio-item compact">
+                                <input type="radio" name="productionLine" value="AB" checked>
+                                <span class="radio-custom"></span>
+                                A/B 라인
+                            </label>
+                            <label class="radio-item compact">
+                                <input type="radio" name="productionLine" value="CD">
+                                <span class="radio-custom"></span>
+                                C/D 라인
+                            </label>
+                            <label class="radio-item compact">
+                                <input type="radio" name="productionLine" value="E">
+                                <span class="radio-custom"></span>
+                                E 라인
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 잔업 선택 -->
+                    <div class="form-group compact">
+                        <label>잔업 선택</label>
+                        <div class="radio-group horizontal">
+                            <label class="radio-item compact">
+                                <input type="radio" name="overtime" value="0" checked>
+                                <span class="radio-custom"></span>
+                                미잔업
+                            </label>
+                            <label class="radio-item compact">
+                                <input type="radio" name="overtime" value="1">
+                                <span class="radio-custom"></span>
+                                1시간 잔업
+                            </label>
+                            <label class="radio-item compact">
+                                <input type="radio" name="overtime" value="2">
+                                <span class="radio-custom"></span>
+                                2시간 잔업
+                            </label>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 잔업 선택 -->
-                <div class="form-group">
-                    <label>잔업 선택</label>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="overtime" value="0" checked>
-                            <span class="radio-custom"></span>
-                            미잔업
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="overtime" value="1">
-                            <span class="radio-custom"></span>
-                            1시간 잔업
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="overtime" value="2">
-                            <span class="radio-custom"></span>
-                            2시간 잔업
-                        </label>
+                <!-- 시작 시간과 종료 시간을 한 줄에 배치 -->
+                <div class="form-row">
+                    <!-- 시작 시간 입력 -->
+                    <div class="form-group compact">
+                        <label for="startTime">시작 시간</label>
+                        <div class="time-input-group">
+                            <input type="time" id="startTime" value="08:30" required>
+                            <button type="button" id="resetStartTime" class="btn-reset" title="기본값으로 초기화">↺</button>
+                        </div>
+                        <!-- 시간대 선택 버튼들 -->
+                        <div class="time-period-buttons">
+                            <button type="button" class="btn-time-period" data-period="A_TIME">A타임</button>
+                            <button type="button" class="btn-time-period" data-period="B_TIME">B타임</button>
+                            <button type="button" class="btn-time-period" data-period="C_TIME">C타임</button>
+                            <button type="button" class="btn-time-period" data-period="D_TIME">D타임</button>
+                            <button type="button" class="btn-time-period" data-period="E_TIME">E타임</button>
+                        </div>
                     </div>
-                </div>
 
-                <!-- 시작 시간 입력 -->
-                <div class="form-group">
-                    <label for="startTime">시작 시간</label>
-                    <input type="time" id="startTime" value="08:30" required>
+                    <!-- 종료 시간 입력 -->
+                    <div class="form-group compact">
+                        <label for="endTime">종료 시간 (선택사항)</label>
+                        <div class="time-input-group">
+                            <input type="time" id="endTime" placeholder="종료 시간을 입력하면 생산 가능 수량을 계산합니다">
+                            <button type="button" id="resetEndTime" class="btn-reset" title="초기화">↺</button>
+                        </div>
+                        <small class="form-help">종료 시간을 입력하면 해당 시간까지 생산 가능한 수량을 계산합니다.</small>
+                    </div>
                 </div>
             </section>
 
@@ -93,6 +120,14 @@
             <!-- 계산 버튼 -->
             <div class="calculate-section">
                 <button type="button" id="calculateBtn" class="btn btn-primary">생산 시간 계산</button>
+            </div>
+
+            <!-- 현재시간 확인 버튼과 결과 지우기 버튼 (결과 표시 후에만 나타남) -->
+            <div class="current-time-section" id="currentTimeSection" style="display: none;">
+                <div class="current-time-buttons">
+                    <button type="button" id="checkCurrentTimeBtn" class="btn btn-secondary">현재시간까지 생산량 확인</button>
+                    <button type="button" id="clearResultsBtn" class="btn btn-danger">결과 지우기</button>
+                </div>
             </div>
 
             <!-- 결과 섹션 -->
