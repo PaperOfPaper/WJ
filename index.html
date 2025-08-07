@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>우주의 계산기 VER.2</title>
+    <title>우주의 계산기 VER.3</title>
     <link rel="stylesheet" href="styles.css">
     
     <!-- Google tag (gtag.js) -->
@@ -19,107 +19,232 @@
 <body>
     <div class="container">
         <header>
-            <h1>우주의 계산기 VER.2</h1>
+            <h1>우주의 계산기 VER.3</h1>
             <div class="admin-controls">
                 <button type="button" id="toggleVisitorInfo" class="btn btn-admin">관리자 모드</button>
             </div>
         </header>
 
         <main>
-            <!-- 입력 섹션 -->
-            <section class="input-section">
-                <h2>기본 설정</h2>
-                
-                <!-- 생산 라인 선택과 잔업 선택을 한 줄에 배치 -->
-                <div class="form-row">
-                    <!-- 생산 라인 선택 -->
-                    <div class="form-group compact">
-                        <label>생산 라인 선택</label>
-                        <div class="radio-group horizontal">
-                            <label class="radio-item compact">
-                                <input type="radio" name="productionLine" value="AB" checked>
-                                <span class="radio-custom"></span>
-                                A/B 라인
-                            </label>
-                            <label class="radio-item compact">
-                                <input type="radio" name="productionLine" value="CD">
-                                <span class="radio-custom"></span>
-                                C/D 라인
-                            </label>
-                            <label class="radio-item compact">
-                                <input type="radio" name="productionLine" value="E">
-                                <span class="radio-custom"></span>
-                                E 라인
-                            </label>
+            <!-- 탭 네비게이션 -->
+            <div class="tab-navigation">
+                <button type="button" class="tab-button active" data-tab="manual">수동 입력</button>
+                <button type="button" class="tab-button" data-tab="excel">엑셀 데이터 입력</button>
+            </div>
+
+            <!-- 수동 입력 탭 -->
+            <div class="tab-content active" id="manual-tab">
+                <!-- 입력 섹션 -->
+                <section class="input-section">
+                    <h2>기본 설정</h2>
+                    
+                    <!-- 생산 라인 선택과 잔업 선택을 한 줄에 배치 -->
+                    <div class="form-row">
+                        <!-- 생산 라인 선택 -->
+                        <div class="form-group compact">
+                            <label>생산 라인 선택</label>
+                            <div class="radio-group horizontal">
+                                <label class="radio-item compact">
+                                    <input type="radio" name="productionLine" value="AB" checked>
+                                    <span class="radio-custom"></span>
+                                    A/B 라인
+                                </label>
+                                <label class="radio-item compact">
+                                    <input type="radio" name="productionLine" value="CD">
+                                    <span class="radio-custom"></span>
+                                    C/D 라인
+                                </label>
+                                <label class="radio-item compact">
+                                    <input type="radio" name="productionLine" value="E">
+                                    <span class="radio-custom"></span>
+                                    E 라인
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 잔업 선택 -->
+                        <div class="form-group compact">
+                            <label>잔업 선택</label>
+                            <div class="radio-group horizontal">
+                                <label class="radio-item compact">
+                                    <input type="radio" name="overtime" value="0" checked>
+                                    <span class="radio-custom"></span>
+                                    미잔업
+                                </label>
+                                <label class="radio-item compact">
+                                    <input type="radio" name="overtime" value="1">
+                                    <span class="radio-custom"></span>
+                                    1시간 잔업
+                                </label>
+                                <label class="radio-item compact">
+                                    <input type="radio" name="overtime" value="2">
+                                    <span class="radio-custom"></span>
+                                    2시간 잔업
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 잔업 선택 -->
-                    <div class="form-group compact">
-                        <label>잔업 선택</label>
-                        <div class="radio-group horizontal">
-                            <label class="radio-item compact">
-                                <input type="radio" name="overtime" value="0" checked>
-                                <span class="radio-custom"></span>
-                                미잔업
-                            </label>
-                            <label class="radio-item compact">
-                                <input type="radio" name="overtime" value="1">
-                                <span class="radio-custom"></span>
-                                1시간 잔업
-                            </label>
-                            <label class="radio-item compact">
-                                <input type="radio" name="overtime" value="2">
-                                <span class="radio-custom"></span>
-                                2시간 잔업
-                            </label>
+                    <!-- 시작 시간과 종료 시간을 한 줄에 배치 -->
+                    <div class="form-row">
+                        <!-- 시작 시간 입력 -->
+                        <div class="form-group compact">
+                            <label for="startTime">시작 시간</label>
+                            <div class="time-input-group">
+                                <input type="time" id="startTime" value="08:30" required>
+                                <button type="button" id="resetStartTime" class="btn-reset" title="기본값으로 초기화">↺</button>
+                            </div>
+                            <!-- 시간대 선택 버튼들 -->
+                            <div class="time-period-buttons">
+                                <button type="button" class="btn-time-period" data-period="A_TIME">A타임</button>
+                                <button type="button" class="btn-time-period" data-period="B_TIME">B타임</button>
+                                <button type="button" class="btn-time-period" data-period="C_TIME">C타임</button>
+                                <button type="button" class="btn-time-period" data-period="D_TIME">D타임</button>
+                                <button type="button" class="btn-time-period" data-period="E_TIME">E타임</button>
+                            </div>
+                        </div>
+
+                        <!-- 종료 시간 입력 -->
+                        <div class="form-group compact">
+                            <label for="endTime">종료 시간 (선택사항)</label>
+                            <div class="time-input-group">
+                                <input type="time" id="endTime" placeholder="종료 시간을 입력하면 생산 가능 수량을 계산합니다">
+                                <button type="button" id="resetEndTime" class="btn-reset" title="초기화">↺</button>
+                            </div>
+                            <small class="form-help">종료 시간을 입력하면 해당 시간까지 생산 가능한 수량을 계산합니다.</small>
                         </div>
                     </div>
+                </section>
+
+                <!-- 모델 입력 섹션 -->
+                <section class="models-section">
+                    <h2>모델 정보</h2>
+                    <div id="modelsContainer">
+                        <!-- 기본 1개 모델 입력 폼 -->
+                    </div>
+                    <button type="button" id="addModel" class="btn btn-secondary">모델 추가</button>
+                </section>
+
+                <!-- 계산 버튼 -->
+                <div class="calculate-section">
+                    <button type="button" id="calculateBtn" class="btn btn-primary">생산 시간 계산</button>
                 </div>
+            </div>
 
-                <!-- 시작 시간과 종료 시간을 한 줄에 배치 -->
-                <div class="form-row">
-                    <!-- 시작 시간 입력 -->
-                    <div class="form-group compact">
-                        <label for="startTime">시작 시간</label>
-                        <div class="time-input-group">
-                            <input type="time" id="startTime" value="08:30" required>
-                            <button type="button" id="resetStartTime" class="btn-reset" title="기본값으로 초기화">↺</button>
+            <!-- 엑셀 데이터 입력 탭 -->
+            <div class="tab-content" id="excel-tab">
+                <!-- 엑셀 입력 섹션 -->
+                <section class="input-section">
+                    <h2>기본 설정</h2>
+                    
+                    <!-- 생산 라인 선택과 잔업 선택을 한 줄에 배치 -->
+                    <div class="form-row">
+                        <!-- 생산 라인 선택 -->
+                        <div class="form-group compact">
+                            <label>생산 라인 선택</label>
+                            <div class="radio-group horizontal">
+                                <label class="radio-item compact">
+                                    <input type="radio" name="excelProductionLine" value="AB" checked>
+                                    <span class="radio-custom"></span>
+                                    A/B 라인
+                                </label>
+                                <label class="radio-item compact">
+                                    <input type="radio" name="excelProductionLine" value="CD">
+                                    <span class="radio-custom"></span>
+                                    C/D 라인
+                                </label>
+                                <label class="radio-item compact">
+                                    <input type="radio" name="excelProductionLine" value="E">
+                                    <span class="radio-custom"></span>
+                                    E 라인
+                                </label>
+                            </div>
                         </div>
-                        <!-- 시간대 선택 버튼들 -->
-                        <div class="time-period-buttons">
-                            <button type="button" class="btn-time-period" data-period="A_TIME">A타임</button>
-                            <button type="button" class="btn-time-period" data-period="B_TIME">B타임</button>
-                            <button type="button" class="btn-time-period" data-period="C_TIME">C타임</button>
-                            <button type="button" class="btn-time-period" data-period="D_TIME">D타임</button>
-                            <button type="button" class="btn-time-period" data-period="E_TIME">E타임</button>
+
+                        <!-- 잔업 선택 -->
+                        <div class="form-group compact">
+                            <label>잔업 선택</label>
+                            <div class="radio-group horizontal">
+                                <label class="radio-item compact">
+                                    <input type="radio" name="excelOvertime" value="0" checked>
+                                    <span class="radio-custom"></span>
+                                    미잔업
+                                </label>
+                                <label class="radio-item compact">
+                                    <input type="radio" name="excelOvertime" value="1">
+                                    <span class="radio-custom"></span>
+                                    1시간 잔업
+                                </label>
+                                <label class="radio-item compact">
+                                    <input type="radio" name="excelOvertime" value="2">
+                                    <span class="radio-custom"></span>
+                                    2시간 잔업
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 종료 시간 입력 -->
-                    <div class="form-group compact">
-                        <label for="endTime">종료 시간 (선택사항)</label>
-                        <div class="time-input-group">
-                            <input type="time" id="endTime" placeholder="종료 시간을 입력하면 생산 가능 수량을 계산합니다">
-                            <button type="button" id="resetEndTime" class="btn-reset" title="초기화">↺</button>
+                    <!-- 시작 시간과 종료 시간을 한 줄에 배치 -->
+                    <div class="form-row">
+                        <!-- 시작 시간 입력 -->
+                        <div class="form-group compact">
+                            <label for="excelStartTime">시작 시간</label>
+                            <div class="time-input-group">
+                                <input type="time" id="excelStartTime" value="08:30" required>
+                                <button type="button" id="excelResetStartTime" class="btn-reset" title="기본값으로 초기화">↺</button>
+                            </div>
+                            <!-- 시간대 선택 버튼들 -->
+                            <div class="time-period-buttons">
+                                <button type="button" class="btn-time-period-excel" data-period="A_TIME">A타임</button>
+                                <button type="button" class="btn-time-period-excel" data-period="B_TIME">B타임</button>
+                                <button type="button" class="btn-time-period-excel" data-period="C_TIME">C타임</button>
+                                <button type="button" class="btn-time-period-excel" data-period="D_TIME">D타임</button>
+                                <button type="button" class="btn-time-period-excel" data-period="E_TIME">E타임</button>
+                            </div>
                         </div>
-                        <small class="form-help">종료 시간을 입력하면 해당 시간까지 생산 가능한 수량을 계산합니다.</small>
+
+                        <!-- 종료 시간 입력 -->
+                        <div class="form-group compact">
+                            <label for="excelEndTime">종료 시간 (선택사항)</label>
+                            <div class="time-input-group">
+                                <input type="time" id="excelEndTime" placeholder="종료 시간을 입력하면 생산 가능 수량을 계산합니다">
+                                <button type="button" id="excelResetEndTime" class="btn-reset" title="초기화">↺</button>
+                            </div>
+                            <small class="form-help">종료 시간을 입력하면 해당 시간까지 생산 가능한 수량을 계산합니다.</small>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- 모델 입력 섹션 -->
-            <section class="models-section">
-                <h2>모델 정보</h2>
-                <div id="modelsContainer">
-                    <!-- 기본 4개 모델 입력 폼 -->
-                </div>
-                <button type="button" id="addModel" class="btn btn-secondary">모델 추가</button>
-            </section>
+                <!-- 엑셀 데이터 입력 섹션 -->
+                <section class="excel-section">
+                    <h2>엑셀 데이터 입력</h2>
+                    <div class="excel-instructions">
+                        <p><strong>📋 사용 방법:</strong></p>
+                        <ol>
+                            <li>엑셀에서 모델명과 수량이 있는 2열 x행 데이터를 복사하세요</li>
+                            <li>아래 텍스트 영역에 붙여넣기 하세요</li>
+                            <li>각 모델의 ST(초)와 라인교체시간(분)을 입력하세요</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="excel-input-container">
+                        <div class="excel-textarea-group">
+                            <label for="excelData">엑셀 데이터 (모델명과 수량)</label>
+                            <textarea id="excelData" placeholder="엑셀에서 복사한 데이터를 여기에 붙여넣으세요&#10;예시:&#10;모델A	100&#10;모델B	200&#10;모델C	150" rows="8"></textarea>
+                        </div>
+                        
+                        <div class="excel-models-container" id="excelModelsContainer">
+                            <!-- 엑셀 모델 입력 폼들이 여기에 생성됩니다 -->
+                        </div>
+                        
+                        <button type="button" id="parseExcelData" class="btn btn-primary">ST입력 넘어가기</button>
+                    </div>
+                </section>
 
-            <!-- 계산 버튼 -->
-            <div class="calculate-section">
-                <button type="button" id="calculateBtn" class="btn btn-primary">생산 시간 계산</button>
+                <!-- 계산 버튼 -->
+                <div class="calculate-section">
+                    <button type="button" id="calculateExcelBtn" class="btn btn-primary">생산 시간 계산</button>
+                </div>
             </div>
 
             <!-- 현재시간 확인 버튼과 결과 지우기 버튼 (결과 표시 후에만 나타남) -->

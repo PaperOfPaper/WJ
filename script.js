@@ -103,6 +103,7 @@ const productionSchedule = {
 
 // 전역 변수
 let modelCount = 0;
+let excelModelCount = 0;
 let visitorInfoVisible = false;
 let visitorInfoElement = null;
 let currentCalculationResults = null; // 현재 계산 결과 저장
@@ -209,6 +210,59 @@ function hideVisitorInfo() {
     }
 }
 
+// 탭 전환 함수
+function switchTab(tabName) {
+    // 모든 탭 버튼 비활성화
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // 모든 탭 컨텐츠 숨기기
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // 선택된 탭 활성화
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // 결과 섹션 숨기기
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('currentTimeSection').style.display = 'none';
+    
+    // 전역 변수 초기화
+    currentCalculationResults = null;
+    
+    // 비활성화된 탭의 입력 필드 초기화
+    if (tabName === 'manual') {
+        // Excel 탭이 비활성화되므로 Excel 관련 필드 초기화
+        resetExcelTabFields();
+    } else if (tabName === 'excel') {
+        // Manual 탭이 비활성화되므로 Manual 관련 필드 초기화
+        resetManualTabFields();
+    }
+}
+
+// Manual 탭 필드 초기화 함수
+function resetManualTabFields() {
+    // 모델 컨테이너 초기화 (기본 1개 모델만 남기기)
+    const modelsContainer = document.getElementById('modelsContainer');
+    modelsContainer.innerHTML = '';
+    modelCount = 0;
+    addModelForm(); // 기본 1개 모델 폼 생성
+}
+
+// Excel 탭 필드 초기화 함수
+function resetExcelTabFields() {
+    // 엑셀 데이터 텍스트 영역 초기화
+    document.getElementById('excelData').value = '';
+    
+    // 엑셀 모델 컨테이너 초기화
+    const excelModelsContainer = document.getElementById('excelModelsContainer');
+    excelModelsContainer.innerHTML = '';
+    excelModelCount = 0;
+}
+
 // DOM 로드 완료 후 실행
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -219,16 +273,37 @@ function initializeApp() {
     // 기본 1개 모델 폼 생성
     addModelForm();
     
+    // 탭 전환 이벤트 리스너 등록
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', function() {
+            switchTab(this.getAttribute('data-tab'));
+        });
+    });
+    
     // 이벤트 리스너 등록
     document.getElementById('addModel').addEventListener('click', addModelForm);
     document.getElementById('calculateBtn').addEventListener('click', calculateProductionTime);
-    document.getElementById('checkCurrentTimeBtn').addEventListener('click', checkCurrentTimeProduction);
+    document.getElementById('checkCurrentTimeBtn').addEventListener('click', function() {
+        // 현재 활성화된 탭에 따라 다른 함수 호출
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab.id === 'excel-tab') {
+            checkExcelCurrentTimeProduction();
+        } else {
+            checkCurrentTimeProduction();
+        }
+    });
     document.getElementById('clearResultsBtn').addEventListener('click', clearResults);
     document.getElementById('toggleVisitorInfo').addEventListener('click', toggleVisitorInfo);
+    
+    // 엑셀 관련 이벤트 리스너 등록
+    document.getElementById('parseExcelData').addEventListener('click', parseExcelData);
+    document.getElementById('calculateExcelBtn').addEventListener('click', calculateExcelProductionTime);
     
     // 시간 리셋 버튼 이벤트 리스너 등록
     document.getElementById('resetStartTime').addEventListener('click', resetStartTime);
     document.getElementById('resetEndTime').addEventListener('click', resetEndTime);
+    document.getElementById('excelResetStartTime').addEventListener('click', resetExcelStartTime);
+    document.getElementById('excelResetEndTime').addEventListener('click', resetExcelEndTime);
     
     // 시간대 선택 버튼 이벤트 리스너 등록
     const timePeriodButtons = document.querySelectorAll('.btn-time-period');
@@ -236,17 +311,31 @@ function initializeApp() {
         button.addEventListener('click', handleTimePeriodClick);
     });
     
+    const timePeriodExcelButtons = document.querySelectorAll('.btn-time-period-excel');
+    timePeriodExcelButtons.forEach(button => {
+        button.addEventListener('click', handleExcelTimePeriodClick);
+    });
+    
     // 라디오 버튼 변경 시 시간대 버튼 상태 업데이트
     document.querySelectorAll('input[name="productionLine"], input[name="overtime"]').forEach(radio => {
         radio.addEventListener('change', updateTimePeriodButtons);
     });
     
+    document.querySelectorAll('input[name="excelProductionLine"], input[name="excelOvertime"]').forEach(radio => {
+        radio.addEventListener('change', updateExcelTimePeriodButtons);
+    });
+    
     // 초기 시간대 버튼 상태 설정
     updateTimePeriodButtons();
+    updateExcelTimePeriodButtons();
     
     // 시작 시간 입력 변경 시 시간대 버튼 상태 업데이트
     document.getElementById('startTime').addEventListener('input', function() {
         updateTimePeriodButtonSelection(null, this.value);
+    });
+    
+    document.getElementById('excelStartTime').addEventListener('input', function() {
+        updateExcelTimePeriodButtonSelection(null, this.value);
     });
     
     // 접속자 정보는 기본적으로 숨김
@@ -303,6 +392,125 @@ function updateModelNumbers() {
         title.textContent = `모델 ${index + 1}`;
     });
     modelCount = modelForms.length;
+}
+
+// 엑셀 모델 폼 추가
+function addExcelModelForm() {
+    excelModelCount++;
+    const container = document.getElementById('excelModelsContainer');
+    
+    const modelForm = document.createElement('div');
+    modelForm.className = 'excel-model-form';
+    
+    // 첫 번째 모델이면 라인교체시간 입력 필드를 제외
+    const lineChangeTimeField = excelModelCount === 1 ? '' : `
+        <div class="excel-model-input-group">
+            <label for="excelLineChangeTime${excelModelCount}">라인교체시간 (분)</label>
+            <input type="number" id="excelLineChangeTime${excelModelCount}" placeholder="라인교체시간을 입력하세요" min="0" value="0">
+        </div>
+    `;
+    
+    modelForm.innerHTML = `
+        <h4>
+            <span>모델 ${excelModelCount}</span>
+            <span class="model-info">엑셀 데이터에서 자동 입력</span>
+        </h4>
+        <button type="button" class="remove-excel-model" onclick="removeExcelModelForm(this)">×</button>
+        <div class="excel-model-inputs">
+            <div class="excel-model-input-group">
+                <label for="excelModelST${excelModelCount}">ST (초)</label>
+                <input type="number" id="excelModelST${excelModelCount}" placeholder="ST를 입력하세요" min="0.1" step="0.1" required>
+            </div>
+            ${lineChangeTimeField}
+        </div>
+    `;
+    
+    container.appendChild(modelForm);
+}
+
+// 엑셀 모델 폼 제거
+function removeExcelModelForm(button) {
+    const modelForm = button.parentElement;
+    modelForm.remove();
+    updateExcelModelNumbers();
+}
+
+// 엑셀 모델 번호 업데이트
+function updateExcelModelNumbers() {
+    const modelForms = document.querySelectorAll('.excel-model-form');
+    modelForms.forEach((form, index) => {
+        const title = form.querySelector('h4 span:first-child');
+        const modelName = form.getAttribute('data-model-name');
+        
+        // 모델명이 있으면 모델명을 표시, 없으면 기본 번호 표시
+        if (modelName) {
+            title.textContent = modelName;
+        } else {
+            title.textContent = `모델 ${index + 1}`;
+        }
+    });
+    excelModelCount = modelForms.length;
+}
+
+// 엑셀 데이터 파싱
+function parseExcelData() {
+    const excelData = document.getElementById('excelData').value.trim();
+    if (!excelData) {
+        alert('엑셀 데이터를 입력해주세요.');
+        return;
+    }
+    
+    const lines = excelData.split('\n').filter(line => line.trim());
+    const models = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        const columns = line.split('\t');
+        
+        if (columns.length >= 2) {
+            const modelName = columns[0].trim();
+            const quantity = parseInt(columns[1].trim());
+            
+            if (modelName && !isNaN(quantity) && quantity > 0) {
+                models.push({ name: modelName, quantity: quantity });
+            }
+        }
+    }
+    
+    if (models.length === 0) {
+        alert('유효한 모델 데이터를 찾을 수 없습니다. 모델명과 수량이 탭으로 구분되어 있는지 확인해주세요.');
+        return;
+    }
+    
+    // 기존 엑셀 모델 폼 제거
+    const container = document.getElementById('excelModelsContainer');
+    container.innerHTML = '';
+    excelModelCount = 0;
+    
+    // 새로운 모델 폼 생성
+    models.forEach((model, index) => {
+        addExcelModelForm();
+        const modelForm = container.children[index];
+        
+        // 모델 정보 업데이트 - 이전 모델 정보 표시 (첫 번째 모델 제외)
+        const modelInfo = modelForm.querySelector('.model-info');
+        if (index === 0) {
+            // 첫 번째 모델은 이전 모델 정보 표시 안함
+            modelInfo.textContent = '';
+        } else {
+            // 이전 모델 정보 표시
+            const previousModel = models[index - 1];
+            modelInfo.textContent = `이전모델-${previousModel.name} - ${previousModel.quantity}`;
+        }
+        
+        // 데이터 속성에 모델 정보 저장
+        modelForm.setAttribute('data-model-name', model.name);
+        modelForm.setAttribute('data-model-quantity', model.quantity);
+        
+        // 모델명을 제목에 표시
+        const title = modelForm.querySelector('h4 span:first-child');
+        title.textContent = model.name;
+    });
 }
 
 // 시간을 분으로 변환
@@ -383,7 +591,7 @@ function getCurrentProductionPeriod(currentTime, schedule) {
     return null;
 }
 
-// 생산 시간 계산
+// 생산 시간 계산 (수동 입력)
 function calculateProductionTime() {
     try {
         // 현재시간 확인 버튼 숨기기
@@ -406,57 +614,156 @@ function calculateProductionTime() {
             return;
         }
     
-    // 모델 데이터 수집
-    const models = [];
-    const modelForms = document.querySelectorAll('.model-form');
-    
-    for (let i = 0; i < modelForms.length; i++) {
-        const form = modelForms[i];
+        // 모델 데이터 수집
+        const models = [];
+        const modelForms = document.querySelectorAll('.model-form');
         
-        const modelNameInput = form.querySelector(`#modelName${i + 1}`);
-        const quantityInput = form.querySelector(`#modelQuantity${i + 1}`);
-        const stInput = form.querySelector(`#modelST${i + 1}`);
+        for (let i = 0; i < modelForms.length; i++) {
+            const form = modelForms[i];
+            
+            const modelNameInput = form.querySelector(`#modelName${i + 1}`);
+            const quantityInput = form.querySelector(`#modelQuantity${i + 1}`);
+            const stInput = form.querySelector(`#modelST${i + 1}`);
+            
+            if (!modelNameInput || !quantityInput || !stInput) {
+                alert(`모델 ${i + 1}의 입력 필드를 찾을 수 없습니다.`);
+                return;
+            }
+            
+            const modelName = modelNameInput.value;
+            const quantity = parseInt(quantityInput.value);
+            const st = parseFloat(stInput.value) / 60; // 초를 분으로 변환
+            const lineChangeTime = i > 0 ? parseInt(form.querySelector(`#lineChangeTime${i + 1}`).value) || 0 : 0;
+            
+            if (!modelName || !quantity || !st) {
+                alert(`모델 ${i + 1}의 모든 필드를 입력해주세요.`);
+                return;
+            }
+            
+            models.push({
+                name: modelName,
+                quantity: quantity,
+                st: st,
+                lineChangeTime: lineChangeTime
+            });
+        }
         
-        if (!modelNameInput || !quantityInput || !stInput) {
-            alert(`모델 ${i + 1}의 입력 필드를 찾을 수 없습니다.`);
+        if (models.length === 0) {
+            alert('최소 하나의 모델을 입력해주세요.');
             return;
         }
         
-        const modelName = modelNameInput.value;
-        const quantity = parseInt(quantityInput.value);
-        const st = parseFloat(stInput.value) / 60; // 초를 분으로 변환
-        const lineChangeTime = i > 0 ? parseInt(form.querySelector(`#lineChangeTime${i + 1}`).value) || 0 : 0;
+        // 생산 스케줄 가져오기
+        const schedule = productionSchedule[productionLine][overtime];
         
-        if (!modelName || !quantity || !st) {
-            alert(`모델 ${i + 1}의 모든 필드를 입력해주세요.`);
-            return;
-        }
+        // 계산 실행
+        const results = calculateSchedule(models, startTime, schedule, overtime, productionLine, endTime);
         
-        models.push({
-            name: modelName,
-            quantity: quantity,
-            st: st,
-            lineChangeTime: lineChangeTime
-        });
-    }
-    
-    if (models.length === 0) {
-        alert('최소 하나의 모델을 입력해주세요.');
-        return;
-    }
-    
-    // 생산 스케줄 가져오기
-    const schedule = productionSchedule[productionLine][overtime];
-    
-    // 계산 실행
-    const results = calculateSchedule(models, startTime, schedule, overtime, productionLine, endTime);
-    
-    // 결과 표시
-    displayResults(results, endTime);
+        // 결과 표시
+        displayResults(results, endTime);
     } catch (error) {
         console.error('계산 중 오류 발생:', error);
         alert('계산 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
     }
+}
+
+// 생산 시간 계산 (엑셀 데이터)
+function calculateExcelProductionTime() {
+    try {
+        // 현재시간 확인 버튼 숨기기
+        document.getElementById('currentTimeSection').style.display = 'none';
+        
+        // 입력값 가져오기
+        const productionLine = document.querySelector('input[name="excelProductionLine"]:checked').value;
+        const overtime = parseInt(document.querySelector('input[name="excelOvertime"]:checked').value);
+        const startTime = document.getElementById('excelStartTime').value;
+        const endTime = document.getElementById('excelEndTime').value;
+        
+        if (!productionLine || overtime === undefined || !startTime) {
+            alert('기본 설정을 모두 입력해주세요.');
+            return;
+        }
+        
+        // 종료시간 유효성 검사
+        if (endTime && timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+            alert('종료시간은 시작시간보다 늦어야 합니다.');
+            return;
+        }
+    
+        // 모델 데이터 수집
+        const models = [];
+        const modelForms = document.querySelectorAll('.excel-model-form');
+        
+        for (let i = 0; i < modelForms.length; i++) {
+            const form = modelForms[i];
+            
+            const modelName = form.getAttribute('data-model-name');
+            const modelQuantity = parseInt(form.getAttribute('data-model-quantity'));
+            const stInput = form.querySelector(`#excelModelST${i + 1}`);
+            const lineChangeTimeInput = form.querySelector(`#excelLineChangeTime${i + 1}`);
+            
+            if (!modelName || !modelQuantity || !stInput) {
+                alert(`모델 ${i + 1}의 입력 필드를 찾을 수 없습니다.`);
+                return;
+            }
+            
+            const st = parseFloat(stInput.value) / 60; // 초를 분으로 변환
+            // 첫 번째 모델(i=0)이거나 라인교체시간 입력 필드가 없으면 0으로 설정
+            const lineChangeTime = (i === 0 || !lineChangeTimeInput) ? 0 : (parseInt(lineChangeTimeInput.value) || 0);
+            
+            if (!st) {
+                alert(`모델 ${i + 1}의 ST를 입력해주세요.`);
+                return;
+            }
+            
+            models.push({
+                name: modelName,
+                quantity: modelQuantity,
+                st: st,
+                lineChangeTime: lineChangeTime
+            });
+        }
+        
+        if (models.length === 0) {
+            alert('최소 하나의 모델을 입력해주세요.');
+            return;
+        }
+        
+        // 생산 스케줄 가져오기
+        const schedule = productionSchedule[productionLine][overtime];
+        
+        // 계산 실행
+        const results = calculateSchedule(models, startTime, schedule, overtime, productionLine, endTime);
+        
+        // 결과 표시
+        displayResults(results, endTime);
+    } catch (error) {
+        console.error('계산 중 오류 발생:', error);
+        alert('계산 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
+    }
+}
+
+// 엑셀 탭용 현재시간까지의 생산수량 확인 함수
+function checkExcelCurrentTimeProduction() {
+    if (!currentCalculationResults) {
+        alert('먼저 생산 시간을 계산해주세요.');
+        return;
+    }
+    
+    const currentTime = new Date();
+    const currentTimeStr = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
+    
+    const productionLine = document.querySelector('input[name="excelProductionLine"]:checked').value;
+    const overtime = parseInt(document.querySelector('input[name="excelOvertime"]:checked').value);
+    const startTime = document.getElementById('excelStartTime').value;
+    
+    const schedule = productionSchedule[productionLine][overtime];
+    
+    // 현재시간까지의 생산계획 상태 계산
+    const currentProductionResults = calculateCurrentTimeProductionStatus(currentCalculationResults, startTime, currentTimeStr, schedule, overtime, productionLine);
+    
+    // 결과 표시
+    displayCurrentTimeResults(currentProductionResults, currentTimeStr);
 }
 
 // 스케줄 계산
@@ -829,129 +1136,90 @@ function checkCurrentTimeProduction() {
     
     const schedule = productionSchedule[productionLine][overtime];
     
-    // 현재시간까지의 생산량 계산
-    const currentProductionResults = calculateCurrentTimeProduction(currentCalculationResults, startTime, currentTimeStr, schedule, overtime, productionLine);
+    // 현재시간까지의 생산계획 상태 계산
+    const currentProductionResults = calculateCurrentTimeProductionStatus(currentCalculationResults, startTime, currentTimeStr, schedule, overtime, productionLine);
     
     // 결과 표시
     displayCurrentTimeResults(currentProductionResults, currentTimeStr);
 }
 
-// 현재시간까지 생산량 계산
-function calculateCurrentTimeProduction(results, startTime, currentTime, schedule, overtime, productionLine) {
+// 현재시간까지 생산계획 상태 계산
+function calculateCurrentTimeProductionStatus(results, startTime, currentTime, schedule, overtime, productionLine) {
     const currentProductionResults = [];
     
+    // 각 모델의 생산 완료 시간 계산
+    let currentTimeMinutes = timeToMinutes(currentTime);
+    let accumulatedTime = timeToMinutes(startTime);
+    
     results.forEach((result, index) => {
-        let totalProduced = 0;
-        let currentModelProduced = 0;
-        let isCurrentModelActive = false;
-        let currentModelStartTime = null;
+        // 라인교체시간 계산 (첫 번째 모델 제외)
+        let lineChangeTime = 0;
+        if (index > 0) {
+            lineChangeTime = result.lineChangeTime;
+        }
         
-        // 모든 모델의 스케줄을 순서대로 확인
-        for (let i = 0; i <= index; i++) {
-            const modelResult = results[i];
-            const model = {
-                name: modelResult.name,
-                st: modelResult.st,
-                lineChangeTime: modelResult.lineChangeTime
-            };
+        // 모델별 생산 시간 계산
+        let modelProductionTime = 0;
+        result.schedule.forEach(period => {
+            modelProductionTime += period.minutes;
+        });
+        
+        // 다음날 생산 시간도 포함
+        result.nextDaySchedule.forEach(period => {
+            modelProductionTime += period.minutes;
+        });
+        
+        // 모델의 생산 시작 시간과 종료 시간
+        const modelStartTime = accumulatedTime;
+        const modelEndTime = modelStartTime + lineChangeTime + modelProductionTime;
+        
+        // 현재시간과 비교하여 상태 결정
+        let status = '';
+        let completedQuantity = 0;
+        let currentModelCompleted = 0;
+        
+        if (currentTimeMinutes < modelStartTime) {
+            // 아직 생산 시작 전
+            status = '대기중';
+            completedQuantity = 0;
+        } else if (currentTimeMinutes >= modelEndTime) {
+            // 생산 완료
+            status = '종료';
+            completedQuantity = result.quantity;
+            currentModelCompleted = result.quantity;
+        } else {
+            // 생산 중
+            status = '생산중';
             
-            // 라인교체시간 고려
-            if (i > 0) {
-                const lineChangeEndTime = addMinutes(currentModelStartTime || startTime, modelResult.lineChangeTime);
-                if (timeToMinutes(currentTime) <= timeToMinutes(lineChangeEndTime)) {
-                    // 라인교체 중이면 이전 모델까지만 생산
-                    break;
-                }
+            // 현재시간까지 생산된 수량 계산
+            const elapsedTime = currentTimeMinutes - modelStartTime - lineChangeTime;
+            if (elapsedTime > 0) {
+                const productionRate = result.quantity / modelProductionTime; // 분당 생산량
+                currentModelCompleted = Math.floor(elapsedTime * productionRate);
+                currentModelCompleted = Math.min(currentModelCompleted, result.quantity);
             }
             
-            // 현재 모델의 생산 시작 시간
-            if (i === index) {
-                currentModelStartTime = currentModelStartTime || startTime;
-                isCurrentModelActive = true;
+            // 이전 모델들의 완료 수량
+            let previousCompleted = 0;
+            for (let i = 0; i < index; i++) {
+                previousCompleted += results[i].quantity;
             }
             
-            // 당일 생산량 계산
-            modelResult.schedule.forEach(period => {
-                const periodStartMinutes = timeToMinutes(period.startTime);
-                const periodEndMinutes = timeToMinutes(period.endTime);
-                const currentMinutes = timeToMinutes(currentTime);
-                
-                if (currentMinutes >= periodStartMinutes) {
-                    if (currentMinutes >= periodEndMinutes) {
-                        // 이 시간대는 완전히 생산 완료
-                        if (i === index) {
-                            currentModelProduced += period.quantity;
-                        }
-                        totalProduced += period.quantity;
-                    } else {
-                        // 현재 시간대에 생산 중
-                        const elapsedMinutes = currentMinutes - periodStartMinutes;
-                        const producedInThisPeriod = Math.floor(elapsedMinutes / model.st);
-                        
-                        if (i === index) {
-                            currentModelProduced += producedInThisPeriod;
-                        }
-                        totalProduced += producedInThisPeriod;
-                    }
-                }
-            });
-            
-            // 다음날 생산량 계산 (현재시간이 다음날인 경우)
-            if (timeToMinutes(currentTime) > timeToMinutes('17:10')) {
-                modelResult.nextDaySchedule.forEach(period => {
-                    const periodStartMinutes = timeToMinutes(period.startTime);
-                    const periodEndMinutes = timeToMinutes(period.endTime);
-                    const currentMinutes = timeToMinutes(currentTime);
-                    
-                    if (currentMinutes >= periodStartMinutes) {
-                        if (currentMinutes >= periodEndMinutes) {
-                            // 이 시간대는 완전히 생산 완료
-                            if (i === index) {
-                                currentModelProduced += period.quantity;
-                            }
-                            totalProduced += period.quantity;
-                        } else {
-                            // 현재 시간대에 생산 중
-                            const elapsedMinutes = currentMinutes - periodStartMinutes;
-                            const producedInThisPeriod = Math.floor(elapsedMinutes / model.st);
-                            
-                            if (i === index) {
-                                currentModelProduced += producedInThisPeriod;
-                            }
-                            totalProduced += producedInThisPeriod;
-                        }
-                    }
-                });
-            }
-            
-            // 현재 모델이 활성화된 경우, 현재 시간까지의 생산량을 더 정확히 계산
-            if (i === index && isCurrentModelActive) {
-                // 현재 시간이 생산 시간대 내에 있는지 확인
-                if (isWithinProductionTime(currentTime, schedule)) {
-                    // 현재 시간대에서의 생산량을 더 정확히 계산
-                    const currentPeriod = getCurrentProductionPeriod(currentTime, schedule);
-                    if (currentPeriod) {
-                        const periodStartMinutes = timeToMinutes(currentPeriod.start);
-                        const currentMinutes = timeToMinutes(currentTime);
-                        const elapsedMinutes = currentMinutes - periodStartMinutes;
-                        const additionalProduced = Math.floor(elapsedMinutes / model.st);
-                        
-                        if (additionalProduced > 0) {
-                            currentModelProduced += additionalProduced;
-                            totalProduced += additionalProduced;
-                        }
-                    }
-                }
-            }
+            completedQuantity = previousCompleted + currentModelCompleted;
         }
         
         currentProductionResults.push({
             name: result.name,
-            totalProduced: totalProduced,
-            currentModelProduced: currentModelProduced,
-            isCurrentModelActive: isCurrentModelActive,
-            targetQuantity: result.quantity
+            status: status,
+            completedQuantity: completedQuantity,
+            currentModelCompleted: currentModelCompleted,
+            targetQuantity: result.quantity,
+            modelStartTime: modelStartTime,
+            modelEndTime: modelEndTime
         });
+        
+        // 다음 모델을 위한 시간 누적
+        accumulatedTime = modelEndTime;
     });
     
     return currentProductionResults;
@@ -975,8 +1243,8 @@ function displayCurrentTimeResults(results, currentTime) {
     `;
     
     currentTimeHeader.innerHTML = `
-        <h3 style="margin: 0 0 10px 0; font-size: 1.5rem;">🕐 현재시간 (${currentTime}) 생산량 현황</h3>
-        <p style="margin: 0; font-size: 1.1rem; opacity: 0.9;">각 모델별 현재까지 생산되어야 할 수량</p>
+        <h3 style="margin: 0 0 10px 0; font-size: 1.5rem;">🕐 현재시간 (${currentTime}) 생산계획 현황</h3>
+        <p style="margin: 0; font-size: 1.1rem; opacity: 0.9;">각 모델별 생산계획 상태 및 완료 수량</p>
     `;
     
     // 기존 헤더가 있으면 제거
@@ -987,7 +1255,7 @@ function displayCurrentTimeResults(results, currentTime) {
     
     container.insertBefore(currentTimeHeader, container.firstChild);
     
-    // 각 모델의 현재 생산량 표시
+    // 각 모델의 현재 생산 상태 표시
     results.forEach((result, index) => {
         const resultItem = container.querySelectorAll('.result-item')[index];
         if (resultItem) {
@@ -1000,8 +1268,32 @@ function displayCurrentTimeResults(results, currentTime) {
             // 새로운 현재시간 표시 추가
             const currentTimeProduction = document.createElement('div');
             currentTimeProduction.className = 'current-time-production';
+            
+            // 상태에 따른 색상 설정
+            let bgColor = '';
+            let statusIcon = '';
+            let statusText = '';
+            
+            switch(result.status) {
+                case '대기중':
+                    bgColor = 'linear-gradient(135deg, #74b9ff 0%, #0984e3 100%)';
+                    statusIcon = '⏳';
+                    statusText = '대기중';
+                    break;
+                case '생산중':
+                    bgColor = 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)';
+                    statusIcon = '🔄';
+                    statusText = '생산중';
+                    break;
+                case '종료':
+                    bgColor = 'linear-gradient(135deg, #00b894 0%, #00a085 100%)';
+                    statusIcon = '✅';
+                    statusText = '종료';
+                    break;
+            }
+            
             currentTimeProduction.style.cssText = `
-                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+                background: ${bgColor};
                 color: white;
                 padding: 15px;
                 border-radius: 8px;
@@ -1010,22 +1302,36 @@ function displayCurrentTimeResults(results, currentTime) {
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             `;
             
-            const progressPercentage = Math.round((result.totalProduced / result.targetQuantity) * 100);
-            const statusText = result.isCurrentModelActive ? '현재 생산 중' : '생산 완료';
+            let statusDetails = '';
+            if (result.status === '생산중') {
+                const progressPercentage = Math.round((result.currentModelCompleted / result.targetQuantity) * 100);
+                statusDetails = `
+                    <div style="margin-bottom: 8px;">
+                        <div style="background: rgba(255, 255, 255, 0.3); height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div style="background: white; height: 100%; width: ${Math.min(progressPercentage, 100)}%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <div style="font-size: 0.9rem; margin-top: 5px;">진행률: ${progressPercentage}%</div>
+                    </div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">
+                        현재 모델 완료: ${result.currentModelCompleted}개 / ${result.targetQuantity}개
+                    </div>
+                `;
+            } else if (result.status === '종료') {
+                statusDetails = `
+                    <div style="font-size: 0.9rem; opacity: 0.9;">
+                        완료 수량: ${result.targetQuantity}개
+                    </div>
+                `;
+            }
             
             currentTimeProduction.innerHTML = `
                 <div style="font-weight: 600; margin-bottom: 8px; font-size: 1.1rem;">
-                    현재까지 생산량: ${result.totalProduced}개 / ${result.targetQuantity}개
+                    ${statusIcon} ${result.name} - ${statusText}
                 </div>
-                <div style="margin-bottom: 8px;">
-                    <div style="background: rgba(255, 255, 255, 0.3); height: 8px; border-radius: 4px; overflow: hidden;">
-                        <div style="background: white; height: 100%; width: ${Math.min(progressPercentage, 100)}%; transition: width 0.3s ease;"></div>
-                    </div>
-                    <div style="font-size: 0.9rem; margin-top: 5px;">진행률: ${progressPercentage}%</div>
+                <div style="font-weight: 600; margin-bottom: 8px; font-size: 1rem;">
+                    총 완료 수량: ${result.completedQuantity}개
                 </div>
-                <div style="font-size: 0.9rem; opacity: 0.9;">
-                    ${result.isCurrentModelActive ? `현재 모델 (${result.name}) 생산량: ${result.currentModelProduced}개` : statusText}
-                </div>
+                ${statusDetails}
             `;
             
             // 결과 아이템의 맨 위에 삽입
@@ -1191,6 +1497,16 @@ function resetEndTime() {
     document.getElementById('endTime').value = '';
 }
 
+// 시작 시간 리셋 함수 (엑셀)
+function resetExcelStartTime() {
+    document.getElementById('excelStartTime').value = '08:30';
+}
+
+// 종료 시간 리셋 함수 (엑셀)
+function resetExcelEndTime() {
+    document.getElementById('excelEndTime').value = '';
+}
+
 // 시간대 선택 버튼 클릭 처리
 function handleTimePeriodClick(event) {
     const button = event.target;
@@ -1223,6 +1539,38 @@ function handleTimePeriodClick(event) {
     updateTimePeriodButtonSelection(period);
 }
 
+// 시간대 선택 버튼 클릭 처리 (엑셀)
+function handleExcelTimePeriodClick(event) {
+    const button = event.target;
+    const period = button.getAttribute('data-period');
+    
+    // 현재 선택된 생산 라인과 잔업 설정 가져오기
+    const productionLine = document.querySelector('input[name="excelProductionLine"]:checked').value;
+    const overtime = parseInt(document.querySelector('input[name="excelOvertime"]:checked').value);
+    
+    // 해당 스케줄 가져오기
+    const schedule = productionSchedule[productionLine][overtime];
+    
+    // E타임이 미잔업일 때 선택된 경우 경고 메시지 표시
+    if (period === 'E_TIME' && overtime === 0) {
+        alert('미잔업일 때는 E타임이 존재하지 않습니다. 잔업을 선택해주세요.');
+        return;
+    }
+    
+    // 해당 시간대가 스케줄에 존재하는지 확인
+    if (!schedule[period]) {
+        alert('선택한 시간대가 현재 설정에 존재하지 않습니다.');
+        return;
+    }
+    
+    // 시작 시간 설정
+    const startTime = schedule[period].start;
+    document.getElementById('excelStartTime').value = startTime;
+    
+    // 선택된 버튼 스타일 업데이트
+    updateExcelTimePeriodButtonSelection(period);
+}
+
 // 시간대 버튼 상태 업데이트 (라디오 버튼 변경 시)
 function updateTimePeriodButtons() {
     const productionLine = document.querySelector('input[name="productionLine"]:checked').value;
@@ -1248,6 +1596,31 @@ function updateTimePeriodButtons() {
     updateTimePeriodButtonSelection(null, currentStartTime);
 }
 
+// 시간대 버튼 상태 업데이트 (엑셀 라디오 버튼 변경 시)
+function updateExcelTimePeriodButtons() {
+    const productionLine = document.querySelector('input[name="excelProductionLine"]:checked').value;
+    const overtime = parseInt(document.querySelector('input[name="excelOvertime"]:checked').value);
+    const schedule = productionSchedule[productionLine][overtime];
+    
+    const timePeriodExcelButtons = document.querySelectorAll('.btn-time-period-excel');
+    
+    timePeriodExcelButtons.forEach(button => {
+        const period = button.getAttribute('data-period');
+        
+        // E타임이 미잔업일 때 비활성화
+        if (period === 'E_TIME' && overtime === 0) {
+            button.classList.add('disabled');
+            button.classList.remove('selected');
+        } else {
+            button.classList.remove('disabled');
+        }
+    });
+    
+    // 현재 시작 시간에 해당하는 버튼 선택 상태 업데이트
+    const currentStartTime = document.getElementById('excelStartTime').value;
+    updateExcelTimePeriodButtonSelection(null, currentStartTime);
+}
+
 // 시간대 버튼 선택 상태 업데이트
 function updateTimePeriodButtonSelection(selectedPeriod = null, startTime = null) {
     const timePeriodButtons = document.querySelectorAll('.btn-time-period');
@@ -1267,6 +1640,39 @@ function updateTimePeriodButtonSelection(selectedPeriod = null, startTime = null
         // 시작 시간에 해당하는 시간대 찾기
         const productionLine = document.querySelector('input[name="productionLine"]:checked').value;
         const overtime = parseInt(document.querySelector('input[name="overtime"]:checked').value);
+        const schedule = productionSchedule[productionLine][overtime];
+        
+        for (const [periodName, period] of Object.entries(schedule)) {
+            if (periodName.endsWith('_TIME') && period.start === startTime) {
+                const button = document.querySelector(`[data-period="${periodName}"]`);
+                if (button && !button.classList.contains('disabled')) {
+                    button.classList.add('selected');
+                }
+                break;
+            }
+        }
+    }
+}
+
+// 시간대 버튼 선택 상태 업데이트 (엑셀)
+function updateExcelTimePeriodButtonSelection(selectedPeriod = null, startTime = null) {
+    const timePeriodExcelButtons = document.querySelectorAll('.btn-time-period-excel');
+    
+    // 모든 버튼의 선택 상태 제거
+    timePeriodExcelButtons.forEach(button => {
+        button.classList.remove('selected');
+    });
+    
+    if (selectedPeriod) {
+        // 특정 시간대가 선택된 경우
+        const button = document.querySelector(`[data-period="${selectedPeriod}"]`);
+        if (button && !button.classList.contains('disabled')) {
+            button.classList.add('selected');
+        }
+    } else if (startTime) {
+        // 시작 시간에 해당하는 시간대 찾기
+        const productionLine = document.querySelector('input[name="excelProductionLine"]:checked').value;
+        const overtime = parseInt(document.querySelector('input[name="excelOvertime"]:checked').value);
         const schedule = productionSchedule[productionLine][overtime];
         
         for (const [periodName, period] of Object.entries(schedule)) {
