@@ -1,0 +1,22 @@
+{
+  "name": "우주의계산기-데이터수집",
+  "version": "1.0.0",
+  "description": "우주의 계산기 데이터 수집 서버",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "json-server": "json-server --watch db.json --port 3001"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "json-server": "^0.17.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["calculator", "data-collection", "production"],
+  "author": "우주의계산기",
+  "license": "MIT"
+} 

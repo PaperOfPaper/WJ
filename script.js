@@ -1,3 +1,69 @@
+// Firebase 데이터 수집 기능
+async function collectVisitorData() {
+    try {
+        if (!window.firebaseDB) {
+            console.log('Firebase not initialized');
+            return;
+        }
+
+        const visitorData = {
+            접속시간: new Date().toLocaleString('ko-KR'),
+            기기유형: navigator.userAgent.includes('Mobile') ? '모바일' : '데스크톱',
+            운영체제: navigator.platform,
+            언어: navigator.language,
+            화면해상도: `${screen.width} x ${screen.height}`,
+            창크기: `${window.innerWidth} x ${window.innerHeight}`,
+            브라우저정보: navigator.userAgent,
+            IP주소: '확인 중...', // IP 주소는 별도 API 필요
+            timestamp: window.serverTimestamp()
+        };
+
+        // IP 주소 가져오기
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            visitorData.IP주소 = data.ip;
+        } catch (error) {
+            visitorData.IP주소 = '확인 실패';
+        }
+
+        // Firebase에 저장
+        const docRef = await window.addDoc(window.collection(window.firebaseDB, 'visitors'), visitorData);
+        console.log('Visitor data saved with ID: ', docRef.id);
+        
+        return visitorData;
+    } catch (error) {
+        console.error('Error collecting visitor data: ', error);
+    }
+}
+
+async function collectCalculationData(results, inputData) {
+    try {
+        if (!window.firebaseDB) {
+            console.log('Firebase not initialized');
+            return;
+        }
+
+        const calculationData = {
+            계산시간: new Date().toLocaleString('ko-KR'),
+            입력데이터: inputData,
+            결과데이터: results,
+            모델수: results.length,
+            총생산시간: results.reduce((sum, result) => sum + result.totalProductionMinutes, 0),
+            총수량: results.reduce((sum, result) => sum + result.quantity, 0),
+            timestamp: window.serverTimestamp()
+        };
+
+        // Firebase에 저장
+        const docRef = await window.addDoc(window.collection(window.firebaseDB, 'calculations'), calculationData);
+        console.log('Calculation data saved with ID: ', docRef.id);
+        
+        return calculationData;
+    } catch (error) {
+        console.error('Error collecting calculation data: ', error);
+    }
+}
+
 // 생산 시간표 데이터 (옵시디언 문서 정확히 반영)
 const productionSchedule = {
     AB: {
@@ -270,6 +336,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 앱 초기화
 function initializeApp() {
+    // 접속자 데이터 수집
+    collectVisitorData();
+    
     // 기본 1개 모델 폼 생성
     addModelForm();
     
@@ -1349,6 +1418,19 @@ function displayCurrentTimeResults(results, currentTime) {
 function displayResults(results, endTime) {
     // 계산 결과 저장
     currentCalculationResults = results;
+    
+    // 계산 데이터 수집
+    const inputData = {
+        생산라인: document.querySelector('input[name="productionLine"]:checked')?.value || 
+                 document.querySelector('input[name="excelProductionLine"]:checked')?.value,
+        잔업: document.querySelector('input[name="overtime"]:checked')?.value || 
+              document.querySelector('input[name="excelOvertime"]:checked')?.value,
+        시작시간: document.getElementById('startTime')?.value || document.getElementById('excelStartTime')?.value,
+        종료시간: document.getElementById('endTime')?.value || document.getElementById('excelEndTime')?.value,
+        모델수: results.length
+    };
+    
+    collectCalculationData(results, inputData);
     
     const container = document.getElementById('resultsContainer');
     container.innerHTML = '';

@@ -15,6 +15,39 @@
 
       gtag('config', 'G-DEW8SS3RYB');
     </script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+      import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyCEzpOSkAayaxpARoZw69hAm84CQ88jZVY",
+        authDomain: "work-calculator-15dcd.firebaseapp.com",
+        projectId: "work-calculator-15dcd",
+        storageBucket: "work-calculator-15dcd.firebasestorage.app",
+        messagingSenderId: "65634532779",
+        appId: "1:65634532779:web:10729f78e482db2f6426ee",
+        measurementId: "G-70RR8PTRQ5"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const db = getFirestore(app);
+
+      // 전역 변수로 Firebase 인스턴스 저장
+      window.firebaseApp = app;
+      window.firebaseDB = db;
+      window.firebaseAnalytics = analytics;
+      window.addDoc = addDoc;
+      window.collection = collection;
+      window.serverTimestamp = serverTimestamp;
+    </script>
 </head>
 <body>
     <div class="container">
